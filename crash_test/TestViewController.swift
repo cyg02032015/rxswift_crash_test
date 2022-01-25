@@ -11,26 +11,32 @@ import RxCocoa
 import RxDataSources
 
 class TestViewController: UIViewController {
-    lazy var coordinator: NoxVoiceRoomCoordinator = {
-        return NoxVoiceRoomCoordinator()
-    }()
+//    lazy var coordinator: NoxVoiceRoomCoordinator = {
+//        return NoxVoiceRoomCoordinator(tableView)
+//    }()
+    let button = UIButton()
     
-//    var coordinator: NoxVoiceRoomCoordinator!
+    var coordinator: TestCoordinator!
     var tableView: UITableView = UITableView()
 
     override func viewDidLoad() {
         super.viewDidLoad()
         tableView.frame = self.view.bounds
         view.addSubview(tableView)
-//        coordinator = NoxVoiceRoomCoordinator(tableView)
-//        coordinator.testBlock = { [weak self] in
-//            DispatchQueue.main.asyncAfter(deadline: .now(), execute: {
-//                self?.coordinator = nil
-//                print("set nil to coordinator")
-//            })
-//        }
-//        coordinator.refresh()
         
+        let screen = UIScreen.main.bounds
+        let wh: CGFloat = 50
+        button.frame = CGRect(origin: CGPoint(x: screen.width/2 - wh/2, y: screen.height/2 - wh/2), size: CGSize(width: wh, height: wh))
+        button.setTitle("B", for: .normal)
+        button.setTitleColor(.black, for: .normal)
+        button.backgroundColor = .blue
+        button.addTarget(self, action: #selector(test(_:)), for: .touchUpInside)
+        view.addSubview(button)
+        coordinator = TestCoordinator(tableView)
+    }
+    
+    @objc func test(_ sender: UIButton) {
+        dismiss(animated: true, completion: nil)
     }
     
     deinit {
@@ -39,69 +45,50 @@ class TestViewController: UIViewController {
     }
 }
 
-final class NoxVoiceRoomCoordinator: NSObject {
+final class TestCoordinator: NSObject {
     let disposeBag = DisposeBag()
     private typealias NoxAnimatableSecionModel = AnimatableSectionModel<String, Person>
     private var sections: BehaviorRelay<[NoxAnimatableSecionModel]> = BehaviorRelay(value: [])
-    private let concurrentQueue = DispatchQueue(label: "concurrent", attributes: [.concurrent])
-    private let queue: DispatchQueue = DispatchQueue(label: "com.noxgroup.onmic.room.parse", qos: .utility)
-    private lazy var micPlaceholder = "123"
+    private let queue: DispatchQueue = DispatchQueue(label: "com.test.room.parse", qos: .utility)
     private var person: Person = Person(name: "11")
-    private var item: DispatchWorkItem?
     
-    var testBlock: (() -> Void)?
-    
-    var tableView: UITableView!
+    weak var tableView: UITableView!
     convenience init(_ tableView: UITableView) {
         self.init()
         self.tableView = tableView
         tableView.register(NoxTestCell.self, forCellReuseIdentifier: "cell")
+        print("------coordinator init")
         sections
             .asDriver(onErrorJustReturn: [])
             .drive(tableView.rx.items(dataSource: dataSource()))
             .disposed(by: disposeBag)
     }
     
-    override init() {
+    private override init() {
         super.init()
     }
     
     /// 刷新CollectionView成员数据
     public func refresh() {
-//        concurrentQueue.asyncAfter(deadline: .now()) { [weak self] in
-//            DispatchQueue.main.async {
-//                self?.testBlock?()
-//            }
-//        }
-//        concurrentQueue.asyncAfter(deadline: .now() + .milliseconds(5)) { [weak self] in
-//            self?.micPlaceholder = "345"
-//            print("set micPlaceholder")
-//        }
-//        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(2)) { [weak self] in
-//            self?.testBlock?()
-//        }
-        if let item = item, !item.isCancelled {
-            item.cancel()
-        }
-        item = DispatchWorkItem(block: { [weak self] in
-            self?.testBlock?()
+        queue.async(execute: DispatchWorkItem(block: { [weak self] in
             self?.person.name = "222"
-            self?.sections.accept([NoxAnimatableSecionModel(model: "1", items: [Person(name: "1112222")])])
-            print("set micPlaceholder")
-        })
-        if let item = item {
-            queue.async(execute: item)
-        }
+            var persons: [Person] = [Person(name: "1112222")]
+            if let person = self?.person {
+                persons.append(person)
+            }
+            DispatchQueue.main.async {
+                self?.sections.accept([NoxAnimatableSecionModel(model: "1", items: persons)])
+            }
+        }))
     }
     
     deinit {
-        item?.cancel()
-//        assert(Thread.isMainThread, "释放不在主线程 coodinator")
+//        assert(Thread.isMainThread, "deinit not on the main thread -- coodinator")
         print("coordinator deinit")
     }
 }
 
-extension NoxVoiceRoomCoordinator {
+extension TestCoordinator {
     private func dataSource() -> RxTableViewSectionedAnimatedDataSource<NoxAnimatableSecionModel> {
         return RxTableViewSectionedAnimatedDataSource<NoxAnimatableSecionModel>(
             animationConfiguration: AnimationConfiguration(insertAnimation: .automatic, reloadAnimation: .automatic, deleteAnimation: .automatic),

@@ -48,7 +48,6 @@
 				863AC7496866B253B85B9EE5 /* Pods-crash_test.debug.xcconfig */,
 				A352F7B413B29F2A92804B60 /* Pods-crash_test.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -359,6 +358,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 84T3U5M3Q7;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = crash_test/Info.plist;
