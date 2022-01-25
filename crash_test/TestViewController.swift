@@ -11,11 +11,6 @@ import RxCocoa
 import RxDataSources
 
 class TestViewController: UIViewController {
-//    lazy var coordinator: NoxVoiceRoomCoordinator = {
-//        return NoxVoiceRoomCoordinator(tableView)
-//    }()
-    let button = UIButton()
-    
     var coordinator: TestCoordinator!
     var tableView: UITableView = UITableView()
 
@@ -23,15 +18,6 @@ class TestViewController: UIViewController {
         super.viewDidLoad()
         tableView.frame = self.view.bounds
         view.addSubview(tableView)
-        
-        let screen = UIScreen.main.bounds
-        let wh: CGFloat = 50
-        button.frame = CGRect(origin: CGPoint(x: screen.width/2 - wh/2, y: screen.height/2 - wh/2), size: CGSize(width: wh, height: wh))
-        button.setTitle("B", for: .normal)
-        button.setTitleColor(.black, for: .normal)
-        button.backgroundColor = .blue
-        button.addTarget(self, action: #selector(test(_:)), for: .touchUpInside)
-        view.addSubview(button)
         coordinator = TestCoordinator(tableView)
     }
     
@@ -41,7 +27,6 @@ class TestViewController: UIViewController {
     
     deinit {
         coordinator.refresh()
-//        print("viewcontroller deinit")
     }
 }
 
@@ -55,34 +40,42 @@ final class TestCoordinator: NSObject {
     weak var tableView: UITableView!
     convenience init(_ tableView: UITableView) {
         self.init()
+        print("coordinator init")
         self.tableView = tableView
         tableView.register(NoxTestCell.self, forCellReuseIdentifier: "cell")
-        print("------coordinator init")
         sections
             .asDriver(onErrorJustReturn: [])
             .drive(tableView.rx.items(dataSource: dataSource()))
             .disposed(by: disposeBag)
     }
     
-    private override init() {
-        super.init()
-    }
+    private override init() {super.init()}
     
-    /// 刷新CollectionView成员数据
     public func refresh() {
+//        let secions = self.sections
+//        var person = self.person
+//        queue.async(execute: DispatchWorkItem(block: {
+//            person.name = "222"
+//            var persons: [Person] = [Person(name: "1112222")]
+//            persons.append(person)
+////            DispatchQueue.main.async {
+//            secions.accept([NoxAnimatableSecionModel(model: "1", items: persons)])
+////            }
+//        }))
         queue.async(execute: DispatchWorkItem(block: { [weak self] in
-            self?.person.name = "222"
-            var persons: [Person] = [Person(name: "1112222")]
-            if let person = self?.person {
-                persons.append(person)
-            }
-            self?.sections.accept([NoxAnimatableSecionModel(model: "1", items: persons)])
+//            DispatchQueue.main.async {
+                self?.person.name = "222"
+                var persons: [Person] = [Person(name: "11122223"),Person(name: "11122221"),Person(name: "11122224"),Person(name: "11122225")]
+                if let person = self?.person {
+                    persons.append(person)
+                }
+                self?.sections.accept([NoxAnimatableSecionModel(model: "1", items: persons)])
+//            }
         }))
     }
     
     deinit {
-//        assert(Thread.isMainThread, "deinit not on the main thread -- coodinator")
-        print("coordinator deinit")
+        print("coordinator deinit \(Thread.current)")
     }
 }
 
@@ -99,28 +92,39 @@ extension TestCoordinator {
 }
 
 struct Person {
-    var name: String?
-    let printer = DeallocPrinter()
+    var id: String = UUID().uuidString
+    var name: String
+    let printer = DeallocPrinter(name: "person")
 }
 
-class DeallocPrinter {
+class DeallocPrinter: Hashable, Encodable {
+    let name: String
+    init(name: String) {
+        self.name = name
+    }
+    
     deinit {
-//        assert(Thread.isMainThread, "释放不在主线程")
-        print("Person deinit")
+        print("\(name) deinit \(Thread.current)")
+    }
+    
+    static func == (lhs: DeallocPrinter, rhs: DeallocPrinter) -> Bool {
+        return ObjectIdentifier(lhs) == ObjectIdentifier(rhs)
+    }
+    
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(ObjectIdentifier(self))
     }
 }
 
 // MARK: - Rx Animatable
 extension Person: IdentifiableType, Equatable {
-    static func == (lhs: Person, rhs: Person) -> Bool {
-        lhs == rhs
-    }
-    
     typealias Identity = String
     var identity: String {
-        UUID().uuidString
+        id
     }
 }
+
+
 
 class NoxTestCell: UITableViewCell {
     

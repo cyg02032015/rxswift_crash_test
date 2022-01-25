@@ -39,13 +39,13 @@ class ViewController: UIViewController {
     func test() {
         let vc = TestViewController()
         present(vc, animated: true) {
-//            DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(500)) { [weak vc] in
-//                vc?.dismiss(animated: true, completion: {
-//                    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(500)) { [weak self] in
-//                        self?.test()
-//                    }
-//                })
-//            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(500)) { [weak vc] in
+                vc?.dismiss(animated: true, completion: {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(500)) { [weak self] in
+                        self?.test()
+                    }
+                })
+            }
         }
     }
 }
