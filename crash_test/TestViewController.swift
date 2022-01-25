@@ -76,9 +76,7 @@ final class TestCoordinator: NSObject {
             if let person = self?.person {
                 persons.append(person)
             }
-            DispatchQueue.main.async {
-                self?.sections.accept([NoxAnimatableSecionModel(model: "1", items: persons)])
-            }
+            self?.sections.accept([NoxAnimatableSecionModel(model: "1", items: persons)])
         }))
     }
     
