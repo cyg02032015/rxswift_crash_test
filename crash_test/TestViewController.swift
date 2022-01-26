@@ -36,20 +36,25 @@ final class TestCoordinator: NSObject {
     private var sections: BehaviorRelay<[NoxAnimatableSecionModel]> = BehaviorRelay(value: [])
     private let queue: DispatchQueue = DispatchQueue(label: "com.test.room.parse", qos: .utility)
     private var person: Person = Person(name: "11")
+    private var persons: [Person] = []
     
     weak var tableView: UITableView!
     convenience init(_ tableView: UITableView) {
         self.init()
-        print("coordinator init")
+        print("coordinator init \(Thread.current)")
         self.tableView = tableView
         tableView.register(NoxTestCell.self, forCellReuseIdentifier: "cell")
-        sections
-            .asDriver(onErrorJustReturn: [])
-            .drive(tableView.rx.items(dataSource: dataSource()))
-            .disposed(by: disposeBag)
+        tableView.dataSource = self
+//        sections
+//            .asDriver(onErrorJustReturn: [])
+//            .drive(tableView.rx.items(dataSource: dataSource()))
+//            .disposed(by: disposeBag)
     }
     
-    private override init() {super.init()}
+    private override init() {
+        super.init()
+        
+    }
     
     public func refresh() {
 //        let secions = self.sections
@@ -65,29 +70,43 @@ final class TestCoordinator: NSObject {
         queue.async(execute: DispatchWorkItem(block: { [weak self] in
 //            DispatchQueue.main.async {
                 self?.person.name = "222"
-                var persons: [Person] = [Person(name: "11122223"),Person(name: "11122221"),Person(name: "11122224"),Person(name: "11122225")]
+            self?.persons = [Person(name: "11122223"),Person(name: "11122221"),Person(name: "11122224"),Person(name: "11122225")]
                 if let person = self?.person {
-                    persons.append(person)
+                    self?.persons.append(person)
                 }
-                self?.sections.accept([NoxAnimatableSecionModel(model: "1", items: persons)])
+            DispatchQueue.main.async {
+                self?.tableView.reloadData()
+            }
+//                self?.sections.accept([NoxAnimatableSecionModel(model: "1", items: persons)])
 //            }
         }))
     }
     
     deinit {
+        persons = []
         print("coordinator deinit \(Thread.current)")
     }
 }
 
-extension TestCoordinator {
-    private func dataSource() -> RxTableViewSectionedAnimatedDataSource<NoxAnimatableSecionModel> {
-        return RxTableViewSectionedAnimatedDataSource<NoxAnimatableSecionModel>(
-            animationConfiguration: AnimationConfiguration(insertAnimation: .automatic, reloadAnimation: .automatic, deleteAnimation: .automatic),
-            configureCell: { (_, tableView, indexPath, item) -> UITableViewCell in
-                let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
-                cell.textLabel?.text = "\(indexPath.row)"
-                return cell
-            })
+extension TestCoordinator: UITableViewDataSource {
+//    private func dataSource() -> RxTableViewSectionedAnimatedDataSource<NoxAnimatableSecionModel> {
+//        return RxTableViewSectionedAnimatedDataSource<NoxAnimatableSecionModel>(
+//            animationConfiguration: AnimationConfiguration(insertAnimation: .automatic, reloadAnimation: .automatic, deleteAnimation: .automatic),
+//            configureCell: { (_, tableView, indexPath, item) -> UITableViewCell in
+//                let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
+//                cell.textLabel?.text = "\(indexPath.row)"
+//                return cell
+//            })
+//    }
+    
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return persons.count
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
+        cell.textLabel?.text = "\(indexPath.row)"
+        return cell
     }
 }
 
@@ -101,6 +120,7 @@ class DeallocPrinter: Hashable, Encodable {
     let name: String
     init(name: String) {
         self.name = name
+        print("\(name) init \(Thread.current)")
     }
     
     deinit {
